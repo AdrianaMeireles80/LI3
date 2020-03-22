@@ -1,0 +1,401 @@
+\documentclass[letterpaper, 10 pt, conference]{IEEEtran} % Comment this line out
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}                                                         % if you need a4paper
+\usepackage[portuges]{babel}
+%\documentclass[a4paper, 10pt, conference]{ieeeconf}      % Use this line for a4
+\usepackage{listings}
+\lstset { %
+language=Java,
+}                                                         % paper
+\usepackage{tikz}
+\usepackage{xstring}
+\usetikzlibrary{calc, arrows}
+\usetikzlibrary{matrix,positioning,arrows.meta,arrows}
+
+\tikzset{
+mymat/.style={
+matrix of math nodes,
+text height=2.5ex,
+text depth=0.75ex,
+text width=3.25ex,
+align=center,
+column sep=-\pgflinewidth
+},
+mymats/.style={
+mymat,
+nodes={draw,fill=#1}
+}
+}
+\IEEEoverridecommandlockouts                              % This command is only
+                                                      % needed if you want to
+                                                      % use the \thanks command
+\overrideIEEEmargins
+% See the \addtolength command later in the file to balance the column lengths
+% on the last page of the document
+
+
+
+% The following packages can be found on http:\\www.ctan.org
+%\usepackage{graphics} % for pdf, bitmapped graphics files
+%\usepackage{epsfig} % for postscript graphics files
+%\usepackage{mathptmx} % assumes new font selection scheme installed
+%\usepackage{times} % assumes new font selection scheme installed
+%\usepackage{amsmath} % assumes amsmath package installed
+%\usepackage{amssymb}  % assumes amsmath package installed
+
+\title{\LARGE \bf
+Laboratórios de Informática III - Projecto em Java
+}
+
+%\author{ \parbox{3 in}{\centering Huibert Kwakernaak*
+%         \thanks{*Use the $\backslash$thanks command to put information here}\\
+%         Faculty of Electrical Engineering, Mathematics and Computer Science\\
+%         University of Twente\\
+%         7500 AE Enschede, The Netherlands\\
+%         {\tt\small h.kwakernaak@autsubmit.com}}
+%         \hspace*{ 0.5 in}
+%         \parbox{3 in}{ \centering Pradeep Misra**
+%         \thanks{**The footnote marks may be inserted manually}\\
+%        Department of Electrical Engineering \\
+%         Wright State University\\
+%         Dayton, OH 45435, USA\\
+%         {\tt\small pmisra@cs.wright.edu}}
+%}
+
+\author{Adriana Meireles (a82582), Eduardo Jorge Barbosa (a83344), Filipe Monteiro (a80229)% <-this % stops a space
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+
+
+\maketitle
+\thispagestyle{empty}
+\pagestyle{empty}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+
+O objectivo desta parte do trabalho foi re-implementar a solução desenvolvida em \textit{C} num paradigma totalmente orientado a objectos em \textit{Java}. Apesar de seguir a arquitectura anterior não é um factor que limite esta fase, sendo que \textit{Java} proporciona um número enorme de estruturas já implementadas através das \textit{Java Collections}.
+
+\end{abstract}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{INTRODUÇÃO}
+
+Irá ser abordado neste relatório a arquitectura da nossa solução nomeadamente estruturas usadas, estratégias utilizadas nas \textit{queries}, encapsulamento e o modelo \textit{MVC}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{PARSER}
+
+Como o \textit{parse} usado na primeira fase existe por \textit{default} em \textit{Java}, escolheu-se mais uma vez utilizar o parser do tipo \textit{SAX}.
+É do notar a diferença entre a implementação em \textit{C} e em \textit{Java}. Utilizando uma implementação análoga do projecto original, o tempo de load aumentou cerca de \textbf{4 a 8 milisegundos}.
+
+\subsection{ALTERNATIVAS}
+
+Um \textit{parser} alternativo que surgiu foi o \textit{StAX}.
+Tal como o \textit{Sax} este \textit{parser} é orientado a eventos. A diferença entre os dois encontra-se no facto do \textit{Sax} ser \textit{push based} e o \textit{StAX} ser \textit{pull based}. De facto, o \textit{StAX} pode ser visto como uma espécie de iterador que gera os eventos que o \textit{parser handler} tem que lidar, já o \textit{sax} recebe os eventos e lida com eles.
+Do que foi pesquisado \textit{StAX} não oferece nenhuma vantagem sobre \textit{sax} e sendo que para a parte de \textit{C} já foi usado \textit{sax} mantivemos.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{MODULARIDADE}
+
+\subsection{ENGINE}
+A nossa arquitetura segue este diagrama:
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.5\textwidth]{engine.png}
+   \caption{Classes principais}
+\end{figure}
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.5\textwidth]{engine2.png}
+   \caption{Diagrama de dependências}
+\end{figure}
+
+Os utilizadores são guardados na classe \textit{Profile}. Questões e respostas são guardadas nas classes \textit{Question} e \textit{Answer} respectivamente que estendem a classe \textit{Post}. Entra outras estruturas os \textit{Posts} são guardados na \textit{Tardis}.
+A classe \textit{MainStruct} agrega todos os dados. Por fim, a classe \textit{TCDCommunity} implementa a \textit{interface} com as \textit{queries}.
+Todas as \textit{queries} foram resolvidas na sua respectiva classe sendo que cada classe apenas possui um método estático (que resolve a questão).
+
+\subsection{LI3}
+
+Com base numa estruturação MVC, tentamos criar um menu simples, onde se pode testar cada query independentemente. Foi baseado no pdf colocado na página da cadeira,
+com modificações para este contexto, assim como acréscimo de opções.
+Por isso temos as seguintes classes:
+\begin{itemize}
+    \item \textit{StackOverflowMVCApp}: main do programa. Aqui fazemmos a lógica de chamar as queries independentes, ou executar a main dada pelos professores que corre todas as queries de uma vez, apresntando tempos e resultados;
+    \item \textit{StackOverflowView}: onde tem as views do programa (estáticas), os menus;
+    \item \textit{StackOverflowController}: controlador do flow do programa. Aqui fazem-se as decisões de menus a apresentar, chamadas das queries;
+    \item \textit{Opção,Menu,Menus}: opçcão, menu e conjunto de menus, respetivamente.
+\end{itemize}
+
+\section{Classes e Estrutura}
+
+Em seguida irá ser feita uma descrição das estruturas utilizadas para efeitos de contextualização. Além do mais são \textbf{discutidas} certas decisões.
+
+\subsection{MAIN STRUCT}
+À semelhança do projecto em \textit{C}, a estrutura principal é constituída por 3 \textit{HashMaps}, uma para os perfis, outra para \textit{posts} e outra para as \textit{tags}, e pela \textit{Tardis} que permite reaver os \textit{Posts} organizados por qualquer critério.
+\newline
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.3\textwidth]{estruturas.png}
+   \caption{Estruturas principais}
+\end{figure}
+
+\subsection{USER}
+A seguinte informação é guardada para cada utilizador:
+\newline
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.3\textwidth]{profile.png}
+   \caption{User}
+\end{figure}
+
+
+
+\subsubsection{POSTS}
+
+
+Todos os \textit{posts} do utilizador são guardados num \textit{TreeSet} que segue a ordem natural dos mesmos (cronológica).
+Foi debatido guardar todos os \textit{posts} ou apenas os últimos 10 e caso fosse esse o cenário se eram guardados num \textit{BoundedTreeSet} ou numa \textit{max heap}.
+Um \textit{BoundedTreeSet} tem a vantagem de ser de relativamente fácil implementação mas a ordenação é mais custosa que uma \textit{max heap}.
+No fim decidimos guardar todos os \textit{posts} do utilizador visto terem utilidade para outras \textit{queries} nomeadamente a \textit{11}.
+
+\subsubsection{COMPARABLE}
+
+Foi discutido implementar uma ordem natural para os \textit{users} mas visto que apenas é necessária em duas \textit{queries} e por critérios diferentes (reputação e número de posts), não foi feito.
+
+\subsection{POST, QUESTION, ANSWER}
+
+\subsubsection{POST}
+Como classe \textit{mae} temos a \textit{Post} que guardas as informações comuns tanto a questões como respostas. Esta classe implementa a \textit{interface comparable} forçando a ordem natural ser cronológica (critério mais comum encontrado por nós).
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.3\textwidth]{post.png}
+   \caption{Post}
+\end{figure}
+
+\subsubsection{ANSWER}
+
+As respostas apenas acrescentam um campo do tipo \textit{long} que corresponde ao \textit{id} da questão a que se refere.
+s
+\subsubsection{QUESTION}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.3\textwidth]{question.png}
+   \caption{Question}
+\end{figure}
+
+Com o objectivo de inter-ligar as respostas com as questões decidiu-se guardar num \textit{Map} todas as respostas relativas a uma dada questão onde a chave é o \textit{id} respectivo.
+
+\subsection{TARDIS}
+
+A \textit{TARDIS} foi a estrutura que mais alterações sofreu.
+Enquanto que na implementação em \textit{C} consistia em duas "variaveis de classe", decidiu-se implementar apenas uma do tipo genérico \textit{Post}. Esta mudança deu-se ao facto de não se ter ganho quase nada com a separação de perguntas e respostas.
+Outra mudança significativa foram as estruturas usadas para criar a \textit{TARDIS} em si Enquanto que no projecto em \textit{C} foram usados \textit{Arrays} de \textit{Arrays} para \textit{GSequences} nesta implementação foram usados \textit{HashMap} para \textit{HashMap} para \textit{List<Post>}. Cada chave corresponde a um indice (ou de anos ou de meses/dias).
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.5\textwidth]{tardisVar.png}
+   \caption{Tardis}
+\end{figure}
+
+\subsubsection{ANAMORFISMO}
+
+De forma a obter \textit{posts} dentro de um intrevalo de tempo e ordenados por um critério \textit{ad hoc}  foi implementado o metodo \textit{getBetweenBy}:
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.5\textwidth]{tardisMetodos.png}
+   \caption{Metodos da Tardis}
+\end{figure}
+
+
+Em primeiro lugar é interessante notar a assinatura do metódo \textit{TreeSet<? extends Post>}. Restringimos o tipo de retorno com uma \textit{bounded wildcard} sendo assim possível retornar tanto um \textit{TreeSet} de \textit{Post}, \textit{Answer} ou \texit{Question}.
+Os seus parâmetros também são bastante interessantes. De forma a saber que tipo procurar (ou tipos), passamos a Class de procura como um genérico \texit{Class<E> type} onde o \textit{genérico E} é \textit{restringido} na assinatura do método \textit{<E extends Post>}.
+Dado a falta de \textit{function pointers} (tanto quanto sabemos) passamos um \texit{Comparator} para ordenar o \texit{TreeSet}.
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.5\textwidth]{ana.png}
+   \caption{Stream da vida}
+\end{figure}
+
+
+Este método tem como gene uma stream. Isto torna o raciocinio muito mais simples do que com \textit{forEach} ou iteradores externos.
+De facto, este método é um anamorfismo de \textit{TreeSets}.
+
+12
+
+
+\subsection{COMPARATORS --- EXCEPÇÕES}
+
+Para comparadores, temos os seguintes:
+\begin{itemize}
+    \item PostCreationDateComparator --> Compara dois Posts em relação á sua data de criação, de forma \textbf{descendente};
+    \item QuestionCreationDateComparator --> Compara duas Question em relação á sua data de criação, de forma \textbf{descendente}\footnote{Apesar de já existir um comparador igual para Posts, este foi necessário para o uso da Tardis, em alguns métodos.};
+    \item ProfileNPostsComparator --> Compara dois Utilizadores em relacão ao número de posts, de forma \textbf{descendente};
+    \item AnswserScoreComparator --> Compara duas Answer em relação ao seu score, de forma \textbf{descendente};
+    \item QuestionAnswerCountComparator --> Compara duas Question em relação ao número de respostas, de forma \textbf{descendente}.
+\end{itemize}
+
+
+
+Quanto a excepções, criamos as seguintes:
+\begin{itemize}
+     \item NoPostFoundException --> Caso um ID nao exista entre os Posts;
+     \item NoProfileFoundException --> Caso um ID nao exista entre os Perfis;
+     \item NoTagFoundException --> Caso um ID nao exista entre as Tags;
+     \item PostIsNotOfRightTypeException --> Caso uma query exiga algo sobre um tipo de Post, mas recebe outro.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{ESTRUTURAÇÃO DE QUERYS}
+
+\subsection{QUERY1}
+
+Nesta query começamos por verificar o tipo do \textit{Post} pedido. Caso seja uma \textit{Answer} vai buscar a informação
+à \textit{Question} a que pertence, caso contrário vai diretamente a esta.
+É importante referir que alteramos a interface \negrito{TADCommunity}, colocando na assinatura desta query a
+possibilidade de produzir \negrito{excepções} caso: não haja o Post ou o utilizador a que pertence, a Question não existe.
+
+
+\subsection{QUERY2}
+
+Aqui inserimos todos os perfis existentes na estrutura principal num TreeSet, usando o comparador \textit{ProfileNPostsComparator}
+que ordena perfis consoante o nº de posts deste(descendente). Depois retorna apenas os primeiros N
+perfis, sob a forma de uma lista de longs (usando streams, maps e limites).
+
+\subsection{QUERY3}
+
+Como a nossa estrutura Tardis possui um método que retorna todos os Posts existentes no programa, apenas chamamos esse método,
+retornando um par apenas com o tamanho de cada tipo de Post(Question e Answer).
+
+\subsection{QUERY4}
+
+Nesta query começamos por recolher todas as Question entre as datas pedidas, através da Tardis(ordenadas por data).
+Depois retornamos uma lista com o ID de todas as Question da Tardis.
+\newline
+É importante referir que experimentamos a implementação com iteradores externos e internos, estando os resultados mais à frente
+no relatório.
+
+\subsection{QUERY5}
+
+Aqui acedemos ao HashMap da estrutura principal para receber o Profile com o ID passado. Depois retornamos um par com a bio deste Profile e os
+10 posts mais recentes(através do TreeSet<Post> existente no Profile, apenas pegando os 10 primeiros).
+Fizemos também a experiência de ir buscar os 10 últimos posts deste (sendo os 10 primeiros no TreeSet do Profile) com
+iteradores internos e externos, mais à frente apresentando resultados.
+
+\subsection{QUERY6}
+
+Usando a Tardis para ter todas as Answers entre as datas pretendidas, ordenadas por um comparator \textint{AnswerScoreComparator}
+que ordena por score (votos - descendente). Depois usamos um iterador externo para percorrer apenas as primeiras N Answer ordenadas.
+
+\subsection{QUERY7}
+
+É importante referir que tomamos a estratégia onde tanto as perguntas como as respostas têm de estar entre as datas pedidas.
+Por isso, começamos por recolher todas as Question compreendidas entre as datas pedidas, onde depois, percorremos cada uma contando quantas respostas tem também entre estas datas,
+adicionando a um par constituído pelo número de respostas calculado e o ID da Question. Adicionamos estes pares
+a uma TreeSet que ordena os pares por ordem decrescente da sua primeira componente (número de respostas),
+retornando assim a segunda componente do primeiro par do Set.
+
+\subsection{QUERY8}
+
+Percorrendo todas as Question (que possuem título), recorrendo à Tardis, adicionamos as primeiras N Question ,o ID onde a palavra
+existe no título(usando iteradores externos).
+
+\subsection{QUERY9}
+
+Nesta query pegamos em todos os Post do primeiro utilizador passado e fazemos o seguinte flow:
+\begin{itemize}
+    \item Se o Post for uma Answer, verificamos se a Question a que pertence a resposta pertence ao segundo utiizador. Se sim,
+    inserimos num TreeSet ordenado por data(PostCreationDateComparator) caso ainda não exista neste;
+    \item Se for uma Question, percorremos todas as respostas, verificando se alguma pertence ao segundo utilizador. Se sim, inserimos
+    no TreeSet caso ainda nao exista.
+\end{itemize}
+    Importante referir que: não vale a pena continuar a percorrer as respostas ou questoes quando já se encontrou algo em comum.
+
+
+\subsection{QUERY10}
+
+Nesta começamos por ir buscar o Post a que pertence o ID. Se não for uma Question atira uma excepção \textit{PostIsNotOfRightType}
+, indicando que não se pode obter as respostas de uma reposta.
+Depois percorremos cada resposta, calculando o score desta e atribuindo a um par constituído por este e pelo ID da resposta.
+Caso algum score seja superior ao existente no par, atualiza-se este, retornando no fim a parte do par com o ID da reposta.
+Para facilitar, criamos um método que calcula o score de uma Answer.
+
+\subsection{QUERY11}
+
+TODO
+
+\section{Conclusão}
+
+Esta segunda fase do projeto deu para aprender como deve ser feito um trabalho em Java, no entanto o processamento foi mais lento relativamente ao trabalho em C.Também devem ser implementadas estruturas eficientes,guardar apenas o necessário e não fazer cópias desnecessárias.
+\newline
+Em comparação à primeira fase, esta foi mais fácil.Não tivemos que criar tabelas de Hash ou listas ligadas,visto que o Java contém muitas estruturas pré definidas eficientes e relativamente mais fáceis de usar.Também não houve necessidade de libertar memória alocada, visto que o garbage collector faz isso por nós.
+\newline
+Também podemos aprender a usar streams do Java 8, apesar de serem ligeiramente mais lentas que os iteradores externos,tornam o código mais compacto,facilitando a leitura e o debug.
+\newline
+Tal como na primeira fase,consideramos que cumprimos os objetivos pretendidos.
+
+
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\addtolength{\textheight}{-12cm}   % This command serves to balance the column lengths
+                              % on the last page of the document manually. It shortens
+                              % the textheight of the last page by a suitable amount.
+                              % This command does not take effect until the next page
+                              % so it should come on the page before the last. Make
+                              % sure that you do not shorten the textheight too much.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\section*{APPENDIX}
+
+%Appendixes should appear before the acknowledgment.
+
+%\section*{ACKNOWLEDGMENT}
+
+%The preferred spelling of the word ÒacknowledgmentÓ in America is without an ÒeÓ after the ÒgÓ. Avoid the stilted expression, ÒOne of us (R. B. G.) thanks . . .Ó  Instead, try ÒR. B. G. thanksÓ. Put sponsor acknowledgments in the unnumbered footnote on the first page.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%References are important to the reader; therefore, each citation must be complete and correct. If at all possible, references should be commonly available publications.
+
+
+
+%\begin{thebibliography}{99}
+%\bibitem{c1} G. O. Young, ÒSynthetic structure of industrial plastics (Book style with paper title and editor),Ó    in Plastics, 2nd ed. vol. 3, J. Peters, Ed.  New York: McGraw-Hill, 1964, pp. 15Ð64.
+%\bibitem{c2} W.-K. Chen, Linear Networks and Systems (Book style).  Belmont, CA: Wadsworth, 1993, pp. 123Ð135.
+
+%\end{thebibliography}
+\end{document}

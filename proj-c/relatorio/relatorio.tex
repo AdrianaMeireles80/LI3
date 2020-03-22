@@ -1,0 +1,387 @@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%2345678901234567890123456789012345678901234567890123456789012345678901234567890
+%        1         2         3         4         5         6         7         8
+
+\documentclass[letterpaper, 10 pt, conference]{IEEEtran}  % Comment this line out
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}                                                         % if you need a4paper
+\usepackage[portuges]{babel}
+%\documentclass[a4paper, 10pt, conference]{ieeeconf}      % Use this line for a4
+ \usepackage{listings}
+ \lstset { %
+    language=C,
+}                                                         % paper
+\usepackage{tikz}
+\usepackage{xstring}
+\usetikzlibrary{calc, arrows}
+\usetikzlibrary{matrix,positioning,arrows.meta,arrows}
+
+\tikzset{
+mymat/.style={
+  matrix of math nodes,
+  text height=2.5ex,
+  text depth=0.75ex,
+  text width=3.25ex,
+  align=center,
+  column sep=-\pgflinewidth
+  },
+mymats/.style={
+  mymat,
+  nodes={draw,fill=#1}
+  }
+}
+\IEEEoverridecommandlockouts                              % This command is only
+                                                          % needed if you want to
+                                                          % use the \thanks command
+\overrideIEEEmargins
+% See the \addtolength command later in the file to balance the column lengths
+% on the last page of the document
+
+
+
+% The following packages can be found on http:\\www.ctan.org
+%\usepackage{graphics} % for pdf, bitmapped graphics files
+%\usepackage{epsfig} % for postscript graphics files
+%\usepackage{mathptmx} % assumes new font selection scheme installed
+%\usepackage{times} % assumes new font selection scheme installed
+%\usepackage{amsmath} % assumes amsmath package installed
+%\usepackage{amssymb}  % assumes amsmath package installed
+
+\title{\LARGE \bf
+Laboratórios de Informática III - Projecto em C
+}
+
+%\author{ \parbox{3 in}{\centering Huibert Kwakernaak*
+%         \thanks{*Use the $\backslash$thanks command to put information here}\\
+%         Faculty of Electrical Engineering, Mathematics and Computer Science\\
+%         University of Twente\\
+%         7500 AE Enschede, The Netherlands\\
+%         {\tt\small h.kwakernaak@autsubmit.com}}
+%         \hspace*{ 0.5 in}
+%         \parbox{3 in}{ \centering Pradeep Misra**
+%         \thanks{**The footnote marks may be inserted manually}\\
+%        Department of Electrical Engineering \\
+%         Wright State University\\
+%         Dayton, OH 45435, USA\\
+%         {\tt\small pmisra@cs.wright.edu}}
+%}
+
+\author{Adriana Meireles (a82582), Eduardo Jorge Barbosa (a83344), Filipe Monteiro (a80229)% <-this % stops a space
+}
+
+
+\begin{document}
+
+
+
+\maketitle
+\thispagestyle{empty}
+\pagestyle{empty}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+
+Este trabalho prático teve como objectivo a organização de grandes volumes de dados de forma a responder a questões, pré definidas, em tempo útil. Os objectos de estudo foram vários dumps do \textit{Stack Exchange}.
+
+\end{abstract}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{INTRODUÇÃO}
+
+O cerne deste trabalho prático consistiu em estruturar a informação relativa a vários posts do \textit{Stack Exchange} de forma a responder em tempo útil às queries fornecidas pelos professores. Para tal, o conhecimento adquirido noutras unidades curriculares, como por exemplo Algoritmos, Programação Imperativa e Calculo de Programas, foi de extrema importância, bem como, um estudo sobre optimização de código C (linguagem exigida por esta unidade curricular). A realização deste projecto foi repartida em várias fases: análise dos dados, escolha das estruturas de dados para os representar, como fazer parse dos ficheiros, resposta as queries e por fim, optimização e limpeza do código. De forma a promover boas práticas de programação e desenvolver um workflow eficiente, todo o código desenvolvido era submetido para um repositório \textit{GIT}.
+
+\section{CONCEÇÃO DO PROBLEMA}
+
+\subsection{ANÁLISE}
+
+Analisando as queries fornecidas pelos professores, restringiu-se o número de ficheiros a serem lidos a 3:
+
+\begin{itemize}
+\item Users;
+\item Posts;
+\item Tags.
+\end{itemize}
+
+Tornou-se também evidente que eram exigidos vários tipos de ordenação: por datas, por score, por número de posts, etc. No entanto, uma grande maioria das queries tinham sempre como base um filtro por datas.
+
+Em relação aos utilizadores tornou-se notório que bastava relacionar o seu id com resto da informação pertinente.
+
+Finalmente,dado que as tags apareciam em várias queries foi bastante discutido como as guardar. Do notar que segundo a documentação no máximo apenas aparecem 5 tags por questão.
+
+\section{CONCEÇÃO DA SOLUÇÃO}
+
+Decidiu-se usar para a estrutura principal 3 \textit{Hash Tables} da \textit{GLIB} e uma estrutura com dupla ordenação \textit{ad hoc}.
+
+As \textit{tags} ficaram agrupadas numa \textit{Hash Table} onde cada chave é a \textit{tag}, em formato \textit{String}, e o valor,  o \textit{id} correspondente.
+Contemplou-se implementar uma \textit{trie} ou uma \textit{inverted index} de forma a ser mais eficiente procurar as tags, mas dado o aumento do tempo de load, não o fizemos.
+
+Por sua vez, os \textit{Posts} ficaram tanto numa \textit{Hash Table} como numa estrutura por nós criada, separados por \textit{Questions} e \textit{Answers}.
+
+Os \textit{Users} ficaram numa \textit{Hash Table}.
+
+Tanto a procura como inserção numa \textit{Hash Table} é $\mathcal{O}(1)$, e estas são as operações mais utilizadas neste projeto.
+Para representar os \textit{Posts} por datas foi pensado a utilização de àrvores balanceadas. Consideramos implementar uma \textit{Red and Black Tree} dado a inserção ser menos pesada que numa \textit{AVL} mas não resolvia o problema de várias ordenações. Surgiu daí a nossa estrutura, um array de arrays com \textit{GSequences} o que permite uma ordenação por datas e uma outra ordenação à nossa escolha.
+
+Finalmente, para realizar o parse utilizamos o parser \textit{SAX} da biblioteca \textit{libxml} dado o tamanho dos ficheiros e apenas ser necessário le-los uma única vez.
+
+\section{Parser}
+
+Escolheu-se utilizar o parser do tipo \textit{SAX}. Este parser é orientado a eventos e recomendado pela documentação do \textit{libxml} para dar parse a grandes ficheiros. Ao contrário das duas outras alternativas este parser não constrói a árvore do xml em memória sendo muito mais rápido (cerca de 1.5x mais rápido). Um lado negativo deste parser é não ser possível editar os ficheiros xml nem percorrer várias vezes o ficheiro mas estes factores não têm qualquer relevância para este trabalho.
+
+As outras duas alternativas eram \textit{DOM based} e \textit{DOM based} com \textit{API tipo SAX}.
+A primeira cria a árvore do xml e carrega toda para a memória, sendo extremamente lenta além de ocupar muita memória (5x mais o tamanho do ficheiro). A sua travessia é bi direcional e não é orientada a eventos.
+A última alternativa é uma versão mais evoluída do \textit{pure DOM}, sendo que não carrega a árvore toda para a memória mas sim à medida que se faz a travessia, a API é orientada a eventos. No entanto por ir construindo a árvore é mais lenta que a \textit{SAX}.
+
+\section{Estruturas de dados}
+
+Utilizou-se a biblioteca \textit{GLib} para a implementação de maior parte das nossas estruturas. A estrutura principal é a seguinte:
+\begin{lstlisting}
+struct TCD_community{
+    GHashTable* profiles;
+    GHashTable* posts;
+    GHashTable* tags;
+    TARDIS type40;
+    long n_tags;
+};
+\end{lstlisting}
+
+\subsection{POSTS, QUESTIONS, ANSWERS}
+
+A representação de um \textit{Post} foi um ponto interessante deste trabalho, visto dividirem-se em \textit{Questions} e \textit{Answers}. Dado partilharem atributos, decidiu-se implementar uma \textit{union}, de forma a conseguirmos juntar os \textit{Posts} ou separá-los como nos fosse mais conveniente.
+\begin{lstlisting}
+struct post{
+    long type; // 1 Question 2 Answer
+    union content{
+        QUESTION q;
+        ANSWER a;
+    }content;
+};
+\end{lstlisting}
+
+Na representação de uma \textit{Question} além da informação básica guardamos os \textit{Ids} das respostas correspondentes. Os \textit{Ids} são inseridos via \textit{insertion sort} comparando a data de criação de cada resposta. Desta forma é possível obter todas as respostas de uma dada pergunta.
+Escolheu-se utilizar um \textit{GArray} visto que o número de inserções é pequeno mas desconhecido, à partida.
+
+\begin{lstlisting}
+struct question{
+    MyDate creation_date;
+    GArray* id_answers;
+    char* title_question;
+    char* tags;
+    long id_question;
+    long owner_id_question;
+    long n_answers;
+    long comments;
+    int score;
+};
+\end{lstlisting}
+
+\subsection{USERS}
+
+Escolheu-se utilizar uma \textit{Hash Table} para agrupar os \textit{Users}. Cada chave é o \textit{Id} do \textit{User} e o valor é a instância que representa aquele \textit{User}.
+Juntamente com os atributos que representam um utilizador guardamos numa \textit{GSequence} as questões e respostas criadas pelo dito utilizador. Escolhemos guardar desta forma em vez de um array fazendo \textit{insertion sort} pois desconhecemos o número de inserções. Além disso, é possível ordernar por vários critérios (um de cada vez).
+
+\begin{lstlisting}
+struct profile{
+    GSequence* posts;
+    char* about_me;
+    char* name;
+    long n_posts;
+    long id;
+    int reputation;
+};
+\end{lstlisting}
+
+
+\subsection{TARDIS}
+
+Com vista a resolver o problema de vários tipo de ordenação, maioritariamente em relação aos \textit{Posts}, decidiu-se criar uma estrutura que consiste num array de arrays com \textit{GSequences}.
+\begin{lstlisting}
+struct tardis {
+    GSequence*** year_questions;
+    GSequence*** year_answers;
+    int years;
+};
+
+\end{lstlisting}
+O primeiro array corresponde aos anos, o segundo array corresponde aos meses e aos dias desse ano. O tamanho de cada array de meses e dias é sempre 31*12. Desta forma torna-se mais fácil iterar sobre a estrutura. Apesar desta forma existirem \textit{"buracos"} não são um número que justifique abandonar esta estratégia.
+Cada array de meses e dias só é criado quando o primeiro \textit{Post} com uma data nessa alcance é processado, desta maneira foi possível optimizar a inserção nesta estrutura e gastar menos memória.
+Com este array de arrays, temos uma granularidade de dias, meses e anos que é o pedido pelas \textit{queries} e dado os \textit{Posts} estarem numa \textit{GSequence} é possível ordenar pelo critério que nós quisermos.
+Num caso extremo em que temos que ordenar um número enorme de \textit{GSequences} demora $\mathcal{O}(\log{}N)$ por \textit{GSequence}, onde o N é o número de \textit{Questions} ou \textit{Answers} (pequeno). De facto, é possível obter uma complexidade amortizada de $\mathcal{O}(1)$ nas queries que peçam Top N entre data X e data Y.
+Para iterar pela TARDIS, o índice do array de anos é calculado subtraindo 2008 ao ano passado como argumento, dado que segundo a documentação do \textit{Stack Exchange} o ano mais antigo é esse. Por sua vez, os meses e dias seguem a seguinte fórmula:
+$dia-1 + (mes-1)*31$
+
+Segue-se uma representação da TARDIS.
+\begin{tikzpicture}[>=latex]
+\matrix[mymat,anchor=west,row 2/.style={nodes=draw}]
+at (0,0)
+(mat1)
+{
+  0       &     1       &     (...)       &     7 \\
+  ** & ** & (...) & ** \\
+};
+\matrix[mymat,anchor=west, row 2/.style={nodes=draw}]
+at (0,-3)
+(mat3)
+{
+  0 & 1 & 2 & 3 & 4 & 5 & (...) & 371 \\
+  * & * & * & * & * & * & (...) & * \\
+};
+
+  \node[above=0pt of mat1]
+  (cella) {Array de anos};
+
+  \node[above=-0pt of mat3]
+  (cella) {Array de meses e dias};
+
+  \node [matrix,draw] at (0,-5) (mat4){Post \\}
+child {node[matrix,draw] {Post \\}}
+child {node[matrix,draw] {Post \\}};
+
+  \node[above=0pt of mat4]
+  (cella) {GSequence de Posts};
+\begin{scope}[shorten <= -2pt]
+\draw[*->]
+  (mat1-2-1.south) -- (mat3-1-1.north);
+\draw[*->]
+  (mat3-2-1.south) -- (mat4.north);
+\end{scope}
+\end{tikzpicture}
+
+\subsection{Datas}
+
+Visto que a granularidade pedida era apenas até aos dias, escolhemos criar a nossa estrutura de datas que abrange até ao milissegundo. Desta forma a ordenação por datas fica mais estável.
+
+\section{QUERIES}
+
+\subsection{QUERY 1}
+
+Dado o \textit{Id} de um \textit{Post} vai-se buscá-lo consultando a \textit{Hash Table} e verifica-se se é uma \textit{Question} ou uma \textit{Answer}. Caso seja uma \textit{Answer} obtém-se o \textit{Id} da \textit{Question} correspondente. No fim, é chamada uma função auxiliar que recebe uma \textit{Question} e devolve o título e o nome do criador. O nome é obtido consultando a \textit{Hash Table} dos \textit{Users}.
+
+\subsection{QUERY 2}
+
+Todos os \textit{Users} são percorridos e é feito um \textit{insertion sort} num array com N+1 elementos tendo por base o número de \textit{Posts}. No fim removemos o elemento N+1. Poderia ser otimizado.
+
+\subsection{QUERY 3}
+
+A TARDIS é percorrida duas vezes dentro desses intervalos de tempo, uma para cada tipo de \textit{Post}. No fim é visto o tamanho das \textit{GSequence} e é feito o \textit{return}.
+
+\subsection{QUERY 4}
+
+A TARDIS é percorrida entre as datas, percorre-se as tags de cada \textit{Question} à procura da tag e se existir é posta num array. Podia ser otimizada.
+
+\subsection{QUERY 5}
+
+Dado o \textit{ID} de um \textit{User} obtém-se o seu perfil. Do perfil conseguimos a \textit{short bio} e ordenamos a \textit{GSequence} inversamente e tiramos os 10 primeiros.
+
+\subsection{QUERY 6}
+
+A TARDIS é percorrida entre as datas dadas e devolve uma \textit{GSequence} ordenada por score, que é convertida para um array com N \textit{IDs}.
+
+\subsection{QUERY 7}
+
+A TARDIS é percorrida entre as datas dadas e devolve uma \textit{GSequence} ordenada por número de respostas. De seguida filtramosas as respostas pelas que  possuem perguntas dentro do tempo pedido finalmente organizamos as questões com mais respostas dentro desse tempo.
+\subsection{QUERY 8}
+
+A TARDIS é percorrida entre as datas dadas e devolve uma \textit{GSequence} ordenada inversamente por datas. É feito um \textit{for each} na \textit{GSquence} que verifica se contém a palavra e em caso afirmativo é guardado o \textit{Id}.
+
+\subsection{QUERY 9}
+
+Dados os \textit{Ids} dos dois utilizadores, vê-se qual dos dois têm menos \textit{Posts} consultando a \textit{GSequence}. No \textit{User} com menos \textit{Posts} percorre-se a \textit{GSquence} por ordem cronológica inversa e em cada \textit{Post} verifica-se se o outro \textit{User} participa na thread.
+
+\subsection{QUERY 10}
+
+Dado o \textit{Id} consulta-se o \textit{GArray} com as respostas e para cada aplica-se a fórmula dada.
+\subsection{QUERY 11}
+
+Obtemos os Top N \textit{Users}.
+Percorremos a TARDIS entre das datas dadas e filtramos as \textit{Questions} que não fora feitas por nenhum dos top \textit{Users}. Finalmente as \textit{Questions} são percorridas, as tags removidas e processadas.
+É criado um array de correspondência para a \textit{Tags} que sempre é encontrada dada tag é incrementado numa unidade. No fim verificamos nos N indices com maiores elementos e fazemos a correspondência inversa.
+
+
+\section{OTIMIZAÇÕES}
+
+O principal foco a nível de otimizações foi estruturar a estutura principal segundo as queries. Fora isso, várias otimizações a nível de código foram feitas, \textit{exempli gratia} $++counter$ vs $counter++$, switch vs vários ifs, etc.
+Foram usadas algumas flags de otimização do \textit{GCC}, a mais notória é \textit{-march=native} que gera código assembly específico para o CPU do computador.
+De forma a ocupar menos memórias, os elementos das estruturas estão ordeanados por tamanho dos tipos.
+
+\section{MODULARIDADE}
+
+Dado o tamanho do projecto foi preciso dividi-lo em várias fases.
+
+\begin{itemize}
+\item Init;
+\item Pase/Load;
+\item Estrutura;
+\item Queries.
+\end{itemize}
+
+Na fase do Init a estrutura principal é inicializada, imediatamente a seguir começa o Parse/Load. Os ficheiros xml são carregados para a memória (um de cada vez e aos poucos) e processados para a estrutura.
+
+O código responsável pelas queries foi deixado para o fim, sendo que o código das estruturas e do parser foi desenvolvido em paralelo após as estruturas estarem desenhadas.
+
+
+
+
+\section{ENCAPSULAMENTO}
+
+Visto que usamos o parser \textit{SAX} não é possivel escrever nos ficheiros xml. Toda a informação vem de fora e  é apenas organizada de outra forma.. Dado que o ficheiro \textit{interface.h} corresponde a \textit{API} do programa e sendo que nenhuma \textit{query} devolve uma instância do estado interno o programa é fechado para o exterior.
+Dado a quantidade enorme de informação não é viavel estar a fazer "cópias" das estruturas sempre que se acede à estrutura interna. Tendo em conta este custo tempora, decidiu-se não o fazer.
+
+
+\section{DIFICULDADES}
+
+O facto de ser utilizar \textit{GLIB} levou a algumas dificuldades. A \textit{TARDIS} foi inicialmente implementada usando \textit{GPtrArrays}, e o encadeamente destas estruturas levantou vários problemas dado não terem funções genéricas.
+A utlização de \textit{function pointers} também foi confuso no início mas rapidamente se tornou normal. Tentou-se também implementar as funções mais básicas e mais usadas em \textit{inline assembly} mas dado a falta de tempo teve que se abandonar a ideia.
+
+Dados o número de estruturas instanciadas, limpar os \textit{memory leaks} tornou-se numa tarefa complexa.
+
+
+
+\addtolength{\textheight}{-12cm}   % This command serves to balance the column lengths
+                                  % on the last page of the document manually. It shortens
+                                  % the textheight of the last page by a suitable amount.
+                                  % This command does not take effect until the next page
+                                  % so it should come on the page before the last. Make
+                                  % sure that you do not shorten the textheight too much.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\section*{APPENDIX}
+
+%Appendixes should appear before the acknowledgment.
+
+%\section*{ACKNOWLEDGMENT}
+
+%The preferred spelling of the word ÒacknowledgmentÓ in America is without an ÒeÓ after the ÒgÓ. Avoid the stilted expression, ÒOne of us (R. B. G.) thanks . . .Ó  Instead, try ÒR. B. G. thanksÓ. Put sponsor acknowledgments in the unnumbered footnote on the first page.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%References are important to the reader; therefore, each citation must be complete and correct. If at all possible, references should be commonly available publications.
+
+
+
+%\begin{thebibliography}{99}
+%\bibitem{c1} G. O. Young, ÒSynthetic structure of industrial plastics (Book style with paper title and editor),Ó    in Plastics, 2nd ed. vol. 3, J. Peters, Ed.  New York: McGraw-Hill, 1964, pp. 15Ð64.
+%\bibitem{c2} W.-K. Chen, Linear Networks and Systems (Book style).  Belmont, CA: Wadsworth, 1993, pp. 123Ð135.
+
+%\end{thebibliography}
+
+
+
+
+\end{document}
+
+
+
